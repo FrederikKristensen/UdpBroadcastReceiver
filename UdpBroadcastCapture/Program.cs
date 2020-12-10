@@ -4,7 +4,9 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading.Tasks;
 using CoronaTestRest.Model;
+using Newtonsoft.Json;
 
 namespace UdpBroadcastCapture
 {
@@ -20,7 +22,7 @@ namespace UdpBroadcastCapture
         // https://msdn.microsoft.com/en-us/library/system.net.ipaddress.ipv6any.aspx
         static void Main()
         {
-            using (UdpClient socket = new UdpClient(new IPEndPoint(IPAddress.Any, Port)))
+            using (UdpClient socket = new UdpClient(new IPEndPoint(IPAddress.Loopback, Port)))
             {
                 IPEndPoint remoteEndPoint = new IPEndPoint(0, 0);
                 while (true)
@@ -34,14 +36,29 @@ namespace UdpBroadcastCapture
                     
                     CoronaTest test = Parse(message);
 
-                    sendtorest(test);
+                    OpretNyTest(test);
                 }
             }
         }
 
-        private static void sendtorest(CoronaTest message)
+        private static async Task OpretNyTest(CoronaTest test)
         {
-            
+            using (HttpClient client = new HttpClient())
+            {
+                StringContent content = new StringContent(
+                    JsonConvert.SerializeObject(test),
+                    Encoding.UTF8,
+                    "application/json");
+
+                HttpResponseMessage resp = await client.PostAsync(URI, content);
+                if (resp.IsSuccessStatusCode)
+                {
+                    return;
+                }
+
+                throw new ArgumentException("opret fejlede");
+            }
+
         }
 
         // To parse data from the IoT devices in the teachers room, Elisagårdsvej
